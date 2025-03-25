@@ -6,25 +6,36 @@ pipeline {
     }
     environment {
         PATH = "/opt/apache-maven-3.8.8/bin:$PATH"
+        SONAR_TOKEN = credentials('sonarqube-token')
     }
     stages {
-        stage("build") {
+        stage('Build') {
             steps {
-                sh 'mvn clean deploy'
+                sh 'mvn clean compile'
+            }
+        }
+        stage('Test') {
+            steps {
+                sh 'mvn test'
             }
         }
         stage('SonarQube analysis') {
             environment {
-                scannerHome = tool 'montana-sonar-scanner';
+                scannerHome = tool 'montana-sonar-scanner'
             }
             steps {
                 withSonarQubeEnv('montana-sonarqube-server') {
                     sh """
                     ${scannerHome}/bin/sonar-scanner \
                     -Dsonar.projectKey=montana-key_twittertrend \
-                    -Dsonar.organization=your-organization-name \
-                    -Dsonar.sources=src \
-                    -Dsonar.java.binaries=target/classes
+                    -Dsonar.organization=montana-key \
+                    -Dsonar.sources=src/main/java \
+                    -Dsonar.tests=src/test/java \
+                    -Dsonar.java.binaries=target/classes \
+                    -Dsonar.java.test.binaries=target/test-classes \
+                    -Dsonar.login=${SONAR_TOKEN} \
+                    -Dsonar.verbose=true \
+                    -Dsonar.sourceEncoding=UTF-8
                     """
                 }
             }
