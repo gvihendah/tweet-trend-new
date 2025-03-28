@@ -1,4 +1,6 @@
 def registry = 'https://montana1.jfrog.io/'
+def imageName = 'montana1.jfrog.io/montana-docker-local/ttrend'
+def version   = '2.1.2'
 pipeline {
     agent {
         node {
@@ -23,17 +25,17 @@ environment {
                 echo "------------unit test completed-----------"
             }
         }
-    stage('SonarQube analysis') {
-        environment {
-            scannerHome = tool 'montana-sonar-scanner';
+//     stage('SonarQube analysis') {
+//         environment {
+//             scannerHome = tool 'montana-sonar-scanner';
 
-        }
-        steps {
-            withSonarQubeEnv('montana-sonarqube-server') { // If you have configured more than one global server connection, you can specify its name
-      sh "${scannerHome}/bin/sonar-scanner"
-        }
-    }
-  }
+//         }
+//         steps {
+//             withSonarQubeEnv('montana-sonarqube-server') { // If you have configured more than one global server connection, you can specify its name
+//       sh "${scannerHome}/bin/sonar-scanner"
+//         }
+//     }
+//   }
 
         stage("Jar Publish") {
          steps {
@@ -60,6 +62,28 @@ environment {
             }
         }   
     }   
+
+        stage(" Docker Build ") {
+         steps {
+          script {
+           echo '<--------------- Docker Build Started --------------->'
+           app = docker.build(imageName+":"+version)
+           echo '<--------------- Docker Build Ends --------------->'
+        }
+      }
+    }
+
+            stage (" Docker Publish "){
+        steps {
+            script {
+               echo '<--------------- Docker Publish Started --------------->'  
+                docker.withRegistry(registry, 'artifact-cred'){
+                    app.push()
+                }    
+               echo '<--------------- Docker Publish Ended --------------->'  
+            }
+        }
+    }
 } 
 }
 
